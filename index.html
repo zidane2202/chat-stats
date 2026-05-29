@@ -383,7 +383,7 @@ html, body {
 </div>
 
 <script>
-  const WEBHOOK = 'https://promote1.app.n8n.cloud/webhook/9072b6e9-4f73-4360-bacd-b46c5af07615';
+  const WEBHOOK = 'https://promote1.app.n8n.cloud/webhook/9072b6e9-4f73-4360-bacd-b46c5af07615/chat';
 
   /* Session */
   if (!sessionStorage.getItem('sid'))
@@ -439,7 +439,7 @@ html, body {
       const res = await fetch(WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatInput: text, sessionId: SID })
+        body: JSON.stringify({ action: 'sendMessage', chatInput: text, sessionId: SID })
       });
       const data = await res.json();
       const reply = data.output || data.text || data.message || JSON.stringify(data);
