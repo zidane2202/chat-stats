@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Chat — Statistiques Descriptives</title>
+
+<!-- n8n Chat Widget CSS -->
+<link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet"/>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --chat--color--primary: #1ACEA0;
+    --chat--color--primary-shade-50: #15b38a;
+    --chat--color--secondary: #1ACEA0;
+    --chat--color-dark: #0d1b2a;
+    --chat--color-light: #e2eaf4;
+    --chat--header--background: #0d1b2a;
+    --chat--header--color: #e2eaf4;
+    --chat--message--bot--background: #1a2f44;
+    --chat--message--bot--color: #e2eaf4;
+    --chat--message--user--background: #1ACEA0;
+    --chat--message--user--color: #0a1a10;
+    --chat--body--background: #112031;
+    --chat--footer--background: #0d1b2a;
+    --chat--input--background: #1a2f44;
+    --chat--input--text-color: #e2eaf4;
+    --chat--window--width: 100%;
+    --chat--window--height: 100vh;
+  }
+
+  html, body {
+    height: 100%;
+    background: #0d1b2a;
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+  }
+
+  /* Conteneur principal */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* Le widget n8n prend tout l'espace */
+  #n8n-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Forcer le widget à remplir la hauteur */
+  #n8n-chat .chat-window,
+  #n8n-chat .n8n-chat {
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* ── CLAVIER MATHÉMATIQUE ── */
+  #math-bar {
+    background: #0d1b2a;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 8px 12px 10px;
+    display: none; /* caché par défaut */
+    flex-direction: column;
+    gap: 6px;
+    z-index: 9999;
+  }
+  #math-bar.open { display: flex; }
+
+  .kbd-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #1a2f44;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 5px 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    width: fit-content;
+  }
+  .kbd-toggle-btn:hover { background: #1ACEA0; color: #0a1a10; }
+
+  /* Bouton flottant pour ouvrir/fermer le clavier */
+  #kbd-float-btn {
+    position: fixed;
+    bottom: 70px;
+    right: 16px;
+    z-index: 99999;
+    background: #1a2f44;
+    border: 1px solid rgba(26,206,160,0.4);
+    border-radius: 8px;
+    color: #1ACEA0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  #kbd-float-btn:hover { background: #1ACEA0; color: #0a1a10; }
+
+  .kbd-section { display: flex; flex-direction: column; gap: 4px; }
+  .kbd-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .kbd-row { display: flex; flex-wrap: wrap; gap: 5px; }
+
+  .k {
+    background: #1a2f44;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    color: #e2eaf4;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, transform 0.08s;
+    min-width: 34px;
+    text-align: center;
+    line-height: 1.3;
+    user-select: none;
+  }
+  .k:hover  { background: #1ACEA0; color: #0a1a10; }
+  .k:active { transform: scale(0.90); }
+  .k.op   { color: #fbbf24; }
+  .k.gr   { color: #93c5fd; }
+  .k.stat { color: #1ACEA0; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Widget n8n Chat -->
+  <div id="n8n-chat"></div>
+
+  <!-- Clavier mathématique (panneau bas) -->
+  <div id="math-bar">
+    <div class="kbd-section">
+      <div class="kbd-label">Opérations</div>
+      <div class="kbd-row">
+        <button class="k op" onclick="ins('+')">+</button>
+        <button class="k op" onclick="ins('−')">−</button>
+        <button class="k op" onclick="ins('×')">×</button>
+        <button class="k op" onclick="ins('÷')">÷</button>
+        <button class="k op" onclick="ins('=')"> = </button>
+        <button class="k op" onclick="ins('≠')">≠</button>
+        <button class="k op" onclick="ins('≈')">≈</button>
+        <button class="k op" onclick="ins('±')">±</button>
+      </div>
+    </div>
+    <div class="kbd-section">
+      <div class="kbd-label">Comparaison</div>
+      <div class="kbd-row">
+        <button class="k" onclick="ins('≤')">≤</button>
+        <button class="k" onclick="ins('≥')">≥</button>
+        <button class="k" onclick="ins('<')">&lt;</button>
+        <button class="k" onclick="ins('>')">&gt;</button>
+        <button class="k" onclick="ins('∈')">∈</button>
+        <button class="k" onclick="ins('∉')">∉</button>
+        <button class="k" onclick="ins('⊂')">⊂</button>
+        <button class="k" onclick="ins('∪')">∪</button>
+        <button class="k" onclick="ins('∩')">∩</button>
+      </div>
+    </div>
+    <div class="kbd-section">
+      <div class="kbd-label">Statistiques</div>
+      <div class="kbd-row">
+        <button class="k stat" onclick="ins('∑')">∑</button>
+        <button class="k stat" onclick="ins('x̄')">x̄</button>
+        <button class="k stat" onclick="ins('σ')">σ</button>
+        <button class="k stat" onclick="ins('σ²')">σ²</button>
+        <button class="k stat" onclick="ins('μ')">μ</button>
+        <button class="k stat" onclick="ins('ν')">ν</button>
+        <button class="k stat" onclick="ins('n')">n</button>
+        <button class="k stat" onclick="ins('∏')">∏</button>
+        <button class="k" onclick="ins('∞')">∞</button>
+        <button class="k" onclick="ins('√')">√</button>
+        <button class="k" onclick="ins('|x|')">|x|</button>
+      </div>
+    </div>
+    <div class="kbd-section">
+      <div class="kbd-label">Exposants & Fractions</div>
+      <div class="kbd-row">
+        <button class="k" onclick="ins('²')">x²</button>
+        <button class="k" onclick="ins('³')">x³</button>
+        <button class="k" onclick="ins('⁻¹')">x⁻¹</button>
+        <button class="k" onclick="ins('^')">xⁿ</button>
+        <button class="k" onclick="ins('½')">½</button>
+        <button class="k" onclick="ins('¼')">¼</button>
+        <button class="k" onclick="ins('¾')">¾</button>
+        <button class="k" onclick="ins('/')"> / </button>
+      </div>
+    </div>
+    <div class="kbd-section">
+      <div class="kbd-label">Lettres grecques</div>
+      <div class="kbd-row">
+        <button class="k gr" onclick="ins('α')">α</button>
+        <button class="k gr" onclick="ins('β')">β</button>
+        <button class="k gr" onclick="ins('γ')">γ</button>
+        <button class="k gr" onclick="ins('δ')">δ</button>
+        <button class="k gr" onclick="ins('ε')">ε</button>
+        <button class="k gr" onclick="ins('θ')">θ</button>
+        <button class="k gr" onclick="ins('λ')">λ</button>
+        <button class="k gr" onclick="ins('π')">π</button>
+        <button class="k gr" onclick="ins('φ')">φ</button>
+        <button class="k gr" onclick="ins('χ²')">χ²</button>
+        <button class="k gr" onclick="ins('Σ')">Σ</button>
+        <button class="k gr" onclick="ins('Δ')">Δ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bouton flottant ∑ -->
+<button id="kbd-float-btn" onclick="toggleKbd()" title="Clavier mathématique">∑</button>
+
+<!-- n8n Chat Widget JS -->
+<script type="module">
+  import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+  createChat({
+    webhookUrl: 'https://promote1.app.n8n.cloud/webhook/9072b6e9-4f73-4360-bacd-b46c5af07615',
+    target: '#n8n-chat',
+    mode: 'fullscreen',
+    showWelcomeScreen: false,
+    chatInputKey: 'chatInput',
+    chatSessionKey: 'sessionId',
+    metadata: {},
+    i18n: {
+      en: {
+        title: 'Hi there! 👋',
+        subtitle: "Start a chat. We're here to help you 24/7.",
+        footer: '',
+        getStarted: 'Start Chatting',
+        inputPlaceholder: 'Type your question..',
+      },
+    },
+  });
+</script>
+
+<script>
+  /* ── TOGGLE CLAVIER ── */
+  let kbdOpen = false;
+  function toggleKbd() {
+    kbdOpen = !kbdOpen;
+    const bar = document.getElementById('math-bar');
+    const btn = document.getElementById('kbd-float-btn');
+    bar.classList.toggle('open', kbdOpen);
+    btn.textContent = kbdOpen ? '✕' : '∑';
+  }
+
+  /* ── INSERTION dans le textarea du widget n8n ── */
+  function ins(sym) {
+    /* Le textarea du widget n8n */
+    const ta = document.querySelector('textarea') || document.querySelector('[contenteditable="true"]');
+    if (!ta) return;
+    ta.focus();
+
+    if (ta.tagName === 'TEXTAREA' || ta.tagName === 'INPUT') {
+      const s = ta.selectionStart, e = ta.selectionEnd;
+      const val = ta.value;
+      ta.value = val.slice(0, s) + sym + val.slice(e);
+      ta.selectionStart = ta.selectionEnd = s + sym.length;
+      /* Déclencher l'événement input pour que React/Vue détecte le changement */
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      /* contenteditable */
+      document.execCommand('insertText', false, sym);
+    }
+    ta.focus();
+  }
+</script>
+
+</body>
+</html>
