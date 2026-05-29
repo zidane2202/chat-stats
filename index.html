@@ -3,154 +3,213 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Chat — Statistiques Descriptives</title>
-<link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet"/>
+<title>Chat — Statistiques</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --chat--color--primary: #1ACEA0;
-    --chat--color--primary-shade-50: #15b38a;
-    --chat--color--secondary: #1ACEA0;
-    --chat--color-secondary-shade-50: #15b38a;
-    --chat--color-dark: #0d1b2a;
-    --chat--color-light: #e2eaf4;
-    --chat--header--background: #0d1b2a;
-    --chat--header--color: #e2eaf4;
-    --chat--message--bot--background: #1a2f44;
-    --chat--message--bot--color: #e2eaf4;
-    --chat--message--user--background: #1ACEA0;
-    --chat--message--user--color: #0a1a10;
-    --chat--body--background: #112031;
-    --chat--footer--background: #0d1b2a;
-    --chat--input--background: #1a2f44;
-    --chat--input--text-color: #e2eaf4;
-    --chat--window--width: 100%;
-    --chat--window--height: 100%;
-  }
+html, body {
+  height: 100%; width: 100%;
+  background: #0d1b2a;
+  font-family: 'DM Sans', sans-serif;
+  color: #e2eaf4;
+  overflow: hidden;
+}
 
-  html, body {
-    height: 100%;
-    width: 100%;
-    background: #0d1b2a;
-    overflow: hidden;
-    font-family: sans-serif;
-  }
+/* ── LAYOUT ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
-  /* Layout global : chat en haut, clavier en bas */
-  #layout {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100%;
-  }
+/* ── HEADER ── */
+#header {
+  background: #0d1b2a;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding: 16px 20px 14px;
+  flex-shrink: 0;
+}
+#header h1 { font-size: 20px; font-weight: 600; }
+#header p  { font-size: 13px; color: #64748b; margin-top: 2px; }
+.dot {
+  display: inline-block; width: 7px; height: 7px;
+  background: #1ACEA0; border-radius: 50%; margin-right: 7px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-  /* Le chat prend tout l'espace restant */
-  #n8n-chat {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
+/* ── MESSAGES ── */
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-behavior: smooth;
+}
+#messages::-webkit-scrollbar { width: 3px; }
+#messages::-webkit-scrollbar-thumb { background: #1a2f44; border-radius: 4px; }
 
-  /* Forcer le widget à remplir son conteneur */
-  #n8n-chat > div,
-  #n8n-chat .n8n-chat,
-  #n8n-chat .chat-window {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100% !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    position: relative !important;
-  }
+.msg {
+  max-width: 75%;
+  padding: 11px 15px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  animation: fadeUp .2s ease both;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 
-  /* ── CLAVIER MATHÉMATIQUE ── */
-  #math-bar {
-    background: #0a1520;
-    border-top: 1px solid rgba(26,206,160,0.2);
-    padding: 8px 10px 10px;
-    overflow-y: auto;
-    max-height: 280px;
-    display: none;
-  }
-  #math-bar.open { display: block; }
+.msg.bot {
+  background: #1a2f44;
+  border: 1px solid rgba(255,255,255,0.06);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+.msg.user {
+  background: #1ACEA0;
+  color: #0a1a10;
+  align-self: flex-end;
+  font-weight: 500;
+  border-bottom-right-radius: 4px;
+}
+.msg.typing { color: #64748b; font-style: italic; }
 
-  .kbd-sections {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+/* ── CLAVIER ── */
+#math-bar {
+  background: #0a1520;
+  border-top: 1px solid rgba(26,206,160,0.15);
+  padding: 8px 10px 10px;
+  overflow-y: auto;
+  max-height: 240px;
+  display: none;
+  flex-shrink: 0;
+}
+#math-bar.open { display: block; }
 
-  .kbd-section { display: flex; flex-direction: column; gap: 4px; }
-  .kbd-label {
-    font-size: 10px;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    font-family: sans-serif;
-  }
-  .kbd-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.kbd-sections { display: flex; flex-direction: column; gap: 7px; }
+.kbd-section  { display: flex; flex-direction: column; gap: 3px; }
+.kbd-label {
+  font-size: 10px; color: #475569;
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.kbd-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.k {
+  background: #1a2f44;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 5px;
+  color: #e2eaf4;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 5px 8px;
+  cursor: pointer;
+  min-width: 32px;
+  text-align: center;
+  line-height: 1.3;
+  user-select: none;
+  transition: background .1s, color .1s, transform .07s;
+}
+.k:hover  { background: #1ACEA0; color: #0a1a10; }
+.k:active { transform: scale(.88); }
+.k.op    { color: #fbbf24; }
+.k.gr    { color: #93c5fd; }
+.k.stat  { color: #1ACEA0; }
+.k.logic { color: #f9a8d4; }
 
-  .k {
-    background: #1a2f44;
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 5px;
-    color: #e2eaf4;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    padding: 5px 8px;
-    cursor: pointer;
-    transition: background 0.1s, color 0.1s, transform 0.07s;
-    min-width: 32px;
-    text-align: center;
-    line-height: 1.3;
-    user-select: none;
-  }
-  .k:hover  { background: #1ACEA0; color: #0a1a10; }
-  .k:active { transform: scale(0.88); }
-  .k.op   { color: #fbbf24; }
-  .k.gr   { color: #93c5fd; }
-  .k.stat { color: #1ACEA0; }
-  .k.logic{ color: #f9a8d4; }
+/* ── INPUT ZONE ── */
+#input-zone {
+  background: #0d1b2a;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 10px 12px 12px;
+  flex-shrink: 0;
+}
+#kbd-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #1a2f44;
+  border: 1px solid rgba(26,206,160,0.3);
+  border-radius: 6px;
+  color: #1ACEA0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: background .15s;
+}
+#kbd-toggle:hover { background: #1ACEA0; color: #0a1a10; }
 
-  /* Bouton flottant ∑ */
-  #kbd-float-btn {
-    position: fixed;
-    bottom: 70px;
-    right: 14px;
-    z-index: 99999;
-    background: #1a2f44;
-    border: 1px solid rgba(26,206,160,0.5);
-    border-radius: 8px;
-    color: #1ACEA0;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 18px;
-    width: 42px;
-    height: 42px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.5);
-  }
-  #kbd-float-btn:hover { background: #1ACEA0; color: #0a1a10; }
+#input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+#userInput {
+  flex: 1;
+  background: #1a2f44;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: #e2eaf4;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  padding: 10px 14px;
+  resize: none;
+  outline: none;
+  min-height: 44px;
+  max-height: 110px;
+  line-height: 1.5;
+  transition: border-color .2s;
+}
+#userInput::placeholder { color: #475569; }
+#userInput:focus { border-color: #1ACEA0; }
+
+#sendBtn {
+  background: #1ACEA0;
+  border: none;
+  border-radius: 10px;
+  color: #0a1a10;
+  font-size: 18px;
+  width: 44px; height: 44px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s, transform .1s;
+}
+#sendBtn:hover  { background: #15b38a; }
+#sendBtn:active { transform: scale(.93); }
+#sendBtn:disabled { background: #1a2f44; color: #475569; cursor: not-allowed; }
 </style>
 </head>
 <body>
+<div id="app">
 
-<div id="layout">
-  <!-- Widget n8n -->
-  <div id="n8n-chat"></div>
+  <!-- HEADER -->
+  <div id="header">
+    <h1><span class="dot"></span>Hi there! 👋</h1>
+    <p>Start a chat. We're here to help you 24/7.</p>
+  </div>
 
-  <!-- Clavier mathématique -->
+  <!-- MESSAGES -->
+  <div id="messages">
+    <div class="msg bot">
+      Bonjour ! Je suis ravi de te retrouver pour cette épreuve de statistiques descriptives.<br><br>
+      Nous allons évaluer ta compréhension à travers <strong style="color:#1ACEA0">4 cas distincts</strong>, chacun composé de 5 questions — soit <strong style="color:#1ACEA0">20 points</strong> au total. Durée : environ <strong style="color:#1ACEA0">1 heure</strong>.<br><br>
+      Les données : <strong style="color:#1ACEA0">8 ; 5 ; 12 ; 3 ; 9 ; 7 ; 2 ; 8 ; 6 ; 10</strong><br><br>
+      Commençons par le premier cas : <strong style="color:#1ACEA0">La Moyenne</strong>.<br><br>
+      <strong>Question 1a</strong> : Donne la définition de la moyenne arithmétique.
+    </div>
+  </div>
+
+  <!-- CLAVIER MATH -->
   <div id="math-bar">
     <div class="kbd-sections">
 
       <div class="kbd-section">
-        <div class="kbd-label">Opérations de base</div>
+        <div class="kbd-label">Opérations</div>
         <div class="kbd-row">
           <button class="k op" onclick="ins('+')">+</button>
           <button class="k op" onclick="ins('−')">−</button>
@@ -190,7 +249,7 @@
       </div>
 
       <div class="kbd-section">
-        <div class="kbd-label">Statistiques & Analyse</div>
+        <div class="kbd-label">Statistiques</div>
         <div class="kbd-row">
           <button class="k stat" onclick="ins('∑')">∑</button>
           <button class="k stat" onclick="ins('x̄')">x̄</button>
@@ -311,61 +370,88 @@
 
     </div>
   </div>
+
+  <!-- INPUT ZONE -->
+  <div id="input-zone">
+    <button id="kbd-toggle" onclick="toggleKbd()">∑ Clavier math ▼</button>
+    <div id="input-row">
+      <textarea id="userInput" placeholder="Type your question.."></textarea>
+      <button id="sendBtn" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+
 </div>
 
-<!-- Bouton flottant -->
-<button id="kbd-float-btn" onclick="toggleKbd()" title="Clavier mathématique">∑</button>
-
-<!-- n8n Chat Widget -->
-<script type="module">
-  import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
-  createChat({
-    webhookUrl: 'https://promote1.app.n8n.cloud/webhook/9072b6e9-4f73-4360-bacd-b46c5af07615',
-    target: '#n8n-chat',
-    mode: 'fullscreen',
-    showWelcomeScreen: false,
-    chatInputKey: 'chatInput',
-    chatSessionKey: 'sessionId',
-    i18n: {
-      en: {
-        title: 'Hi there! 👋',
-        subtitle: "Start a chat. We're here to help you 24/7.",
-        footer: '',
-        getStarted: 'Start Chatting',
-        inputPlaceholder: 'Type your question..',
-      },
-    },
-  });
-</script>
-
 <script>
-  let kbdOpen = false;
+  const WEBHOOK = 'https://promote1.app.n8n.cloud/webhook/9072b6e9-4f73-4360-bacd-b46c5af07615';
 
+  /* Session */
+  if (!sessionStorage.getItem('sid'))
+    sessionStorage.setItem('sid', 'sess_' + Date.now());
+  const SID = sessionStorage.getItem('sid');
+
+  /* Auto-resize textarea */
+  const ta = document.getElementById('userInput');
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 110) + 'px';
+  });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  });
+
+  /* Clavier */
+  let kbdOpen = false;
   function toggleKbd() {
     kbdOpen = !kbdOpen;
     document.getElementById('math-bar').classList.toggle('open', kbdOpen);
-    document.getElementById('kbd-float-btn').textContent = kbdOpen ? '✕' : '∑';
+    document.getElementById('kbd-toggle').textContent = '∑ Clavier math ' + (kbdOpen ? '▲' : '▼');
+  }
+  function ins(sym) {
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    ta.value = ta.value.slice(0, s) + sym + ta.value.slice(e);
+    ta.selectionStart = ta.selectionEnd = s + sym.length;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    ta.focus();
   }
 
-  function ins(sym) {
-    /* Cherche le textarea du widget n8n */
-    const ta = document.querySelector('#n8n-chat textarea') 
-            || document.querySelector('textarea') 
-            || document.querySelector('[contenteditable="true"]');
-    if (!ta) return;
+  /* Messages */
+  const box = document.getElementById('messages');
+  function addMsg(html, role) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + role;
+    d.innerHTML = html;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+    return d;
+  }
 
-    if (ta.tagName === 'TEXTAREA' || ta.tagName === 'INPUT') {
-      const s = ta.selectionStart ?? ta.value.length;
-      const e = ta.selectionEnd ?? ta.value.length;
-      ta.value = ta.value.slice(0, s) + sym + ta.value.slice(e);
-      ta.selectionStart = ta.selectionEnd = s + sym.length;
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-    } else {
-      document.execCommand('insertText', false, sym);
+  /* Envoi */
+  async function sendMsg() {
+    const text = ta.value.trim();
+    if (!text) return;
+    addMsg(text.replace(/</g,'&lt;'), 'user');
+    ta.value = ''; ta.style.height = 'auto';
+    document.getElementById('sendBtn').disabled = true;
+
+    const typing = addMsg('...', 'bot typing');
+    try {
+      const res = await fetch(WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatInput: text, sessionId: SID })
+      });
+      const data = await res.json();
+      const reply = data.output || data.text || data.message || JSON.stringify(data);
+      typing.remove();
+      addMsg(reply.replace(/\n/g,'<br>'), 'bot');
+    } catch(err) {
+      typing.remove();
+      addMsg('⚠️ Erreur de connexion.', 'bot');
     }
+    document.getElementById('sendBtn').disabled = false;
     ta.focus();
   }
 </script>
-
 </body>
 </html>
